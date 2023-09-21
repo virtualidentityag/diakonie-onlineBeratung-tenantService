@@ -55,10 +55,9 @@ public class TenantService {
   }
 
   private void overrideSubdomainIfNeededForSingleDomainMultitenancy(TenantEntity tenantEntity) {
-    if (multitenancyWithSingleDomain) {
-      if (shouldOverrideSubdomain(tenantEntity, getMainTenantSubdomain())) {
-        tenantEntity.setSubdomain(StringUtils.EMPTY);
-      }
+    if (multitenancyWithSingleDomain
+        && shouldOverrideSubdomain(tenantEntity, getMainTenantSubdomain())) {
+      tenantEntity.setSubdomain(StringUtils.EMPTY);
     }
   }
 
@@ -129,5 +128,9 @@ public class TenantService {
       log.error("Error while reading default tenant settings configuration file", ioException);
       throw new InternalServerErrorException();
     }
+  }
+
+  public void delete(TenantEntity createdTenant) {
+    tenantRepository.delete(createdTenant);
   }
 }

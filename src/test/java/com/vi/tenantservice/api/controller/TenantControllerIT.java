@@ -22,6 +22,7 @@ import com.vi.tenantservice.api.config.apiclient.ConsultingTypeServiceApiControl
 import com.vi.tenantservice.api.model.TenantDTO;
 import com.vi.tenantservice.api.service.consultingtype.ApplicationSettingsService;
 import com.vi.tenantservice.api.service.consultingtype.ConsultingTypeService;
+import com.vi.tenantservice.api.service.consultingtype.TopicService;
 import com.vi.tenantservice.api.service.consultingtype.UserAdminService;
 import com.vi.tenantservice.api.service.httpheader.SecurityHeaderSupplier;
 import com.vi.tenantservice.api.tenant.SubdomainExtractor;
@@ -30,7 +31,7 @@ import com.vi.tenantservice.api.util.MultilingualTenantTestDataBuilder;
 import com.vi.tenantservice.applicationsettingsservice.generated.web.model.ApplicationSettingsDTO;
 import com.vi.tenantservice.applicationsettingsservice.generated.web.model.ApplicationSettingsDTOMultitenancyWithSingleDomainEnabled;
 import com.vi.tenantservice.config.security.AuthorisationService;
-import com.vi.tenantservice.consultingtypeservice.generated.web.model.*;
+import com.vi.tenantservice.consultingtypeservice.generated.web.model.FullConsultingTypeResponseDTO;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -107,6 +108,8 @@ class TenantControllerIT {
 
   @MockBean SubdomainExtractor subdomainExtractor;
 
+  @MockBean TopicService topicService;
+
   private MockMvc mockMvc;
 
   @BeforeEach
@@ -138,6 +141,8 @@ class TenantControllerIT {
       throws Exception {
     AuthenticationMockBuilder builder = new AuthenticationMockBuilder();
     giveAuthorisationServiceReturnProperAuthoritiesForRole(TENANT_ADMIN);
+    when(consultingTypeService.createDefaultConsultingType(Mockito.anyLong()))
+        .thenReturn(new FullConsultingTypeResponseDTO());
     mockMvc
         .perform(
             post(TENANTADMIN_RESOURCE)
@@ -192,6 +197,8 @@ class TenantControllerIT {
   void createTenant_Should_notCreateTenant_When_SubdomainIsNotUnique() throws Exception {
     AuthenticationMockBuilder builder = new AuthenticationMockBuilder();
     giveAuthorisationServiceReturnProperAuthoritiesForRole(TENANT_ADMIN);
+    when(consultingTypeService.createDefaultConsultingType(Mockito.anyLong()))
+        .thenReturn(new FullConsultingTypeResponseDTO());
     // given
     mockMvc
         .perform(
@@ -261,13 +268,20 @@ class TenantControllerIT {
                 .sendFurtherStepsMessage(true)
                 .sendSaveSessionDataMessage(true)
                 .welcomeMessage(
-                    new WelcomeMessageDTO().welcomeMessageText("welcome").sendWelcomeMessage(true))
+                    new com.vi.tenantservice.consultingtypeservice.generated.web.model
+                            .WelcomeMessageDTO()
+                        .welcomeMessageText("welcome")
+                        .sendWelcomeMessage(true))
                 .notifications(
-                    new NotificationsDTO()
+                    new com.vi.tenantservice.consultingtypeservice.generated.web.model
+                            .NotificationsDTO()
                         .teamSessions(
-                            new NotificationsDTOTeamSessions()
+                            new com.vi.tenantservice.consultingtypeservice.generated.web.model
+                                    .NotificationsDTOTeamSessions()
                                 .newMessage(
-                                    new TeamSessionsDTONewMessage().allTeamConsultants(true))))
+                                    new com.vi.tenantservice.consultingtypeservice.generated.web
+                                            .model.TeamSessionsDTONewMessage()
+                                        .allTeamConsultants(true))))
                 .isVideoCallAllowed(true));
 
     giveAuthorisationServiceReturnProperAuthoritiesForRole(TENANT_ADMIN);

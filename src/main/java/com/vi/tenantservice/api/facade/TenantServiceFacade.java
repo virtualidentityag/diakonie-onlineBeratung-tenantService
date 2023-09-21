@@ -27,6 +27,7 @@ import com.vi.tenantservice.api.service.TenantService;
 import com.vi.tenantservice.api.service.TranslationService;
 import com.vi.tenantservice.api.service.consultingtype.ApplicationSettingsService;
 import com.vi.tenantservice.api.service.consultingtype.ConsultingTypeService;
+import com.vi.tenantservice.api.service.consultingtype.TopicService;
 import com.vi.tenantservice.api.service.consultingtype.UserAdminService;
 import com.vi.tenantservice.api.tenant.SubdomainExtractor;
 import com.vi.tenantservice.api.tenant.TenantResolverService;
@@ -83,6 +84,8 @@ public class TenantServiceFacade {
 
   private final @NonNull SingleDomainTenantOverrideService singleDomainTenantOverrideService;
 
+  private final @NonNull TopicService topicService;
+
   @Value("${feature.multitenancy.with.single.domain.enabled}")
   private boolean multitenancyWithSingleDomain;
 
@@ -95,8 +98,18 @@ public class TenantServiceFacade {
     var entity = tenantConverter.toEntity(sanitizedTenantDTO);
     populateTenantSettingsAndActivationDates(entity, tenantDTO);
     TenantEntity createdTenant = tenantService.create(entity);
-    createDefaultConsultingTypeSettings(createdTenant);
+    try {
+      createDefaultConsultingTypeSettingsAndTopic(createdTenant);
+    } catch (Exception ex) {
+      log.error("Error creating tenant", ex);
+      rollback(createdTenant);
+      throw ex;
+    }
     return tenantConverter.toMultilingualDTO(createdTenant);
+  }
+
+  private void rollback(TenantEntity createdTenant) {
+    tenantService.delete(createdTenant);
   }
 
   private void populateTenantSettingsAndActivationDates(
@@ -110,12 +123,18 @@ public class TenantServiceFacade {
     tenant.setSettings(convertToJson(defaultTenantSettings));
   }
 
-  private void createDefaultConsultingTypeSettings(TenantEntity createdTenant) {
-    consultingTypeService.createDefaultConsultingTypes(createdTenant.getId());
+  private void createDefaultConsultingTypeSettingsAndTopic(TenantEntity createdTenant) {
+    FullConsultingTypeResponseDTO defaultConsultingType =
+        consultingTypeService.createDefaultConsultingType(createdTenant.getId());
     if (isAttemptToCreateFirstNonTechnicalTenant(createdTenant.getId())) {
       validateSubDomain(createdTenant.getSubdomain());
       applicationSettingsService.saveMainTenantSubDomain(createdTenant.getSubdomain());
     }
+    createDefaultTopic(defaultConsultingType.getId(), createdTenant);
+  }
+
+  private void createDefaultTopic(Integer consultingTypeId, TenantEntity createdTenant) {
+    topicService.createDefaultTopic(createdTenant.getId(), consultingTypeId);
   }
 
   private void validateSubDomain(String subdomain) {

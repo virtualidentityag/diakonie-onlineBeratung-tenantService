@@ -30,6 +30,7 @@ import com.vi.tenantservice.api.service.TenantService;
 import com.vi.tenantservice.api.service.TranslationService;
 import com.vi.tenantservice.api.service.consultingtype.ApplicationSettingsService;
 import com.vi.tenantservice.api.service.consultingtype.ConsultingTypeService;
+import com.vi.tenantservice.api.service.consultingtype.TopicService;
 import com.vi.tenantservice.api.service.consultingtype.UserAdminService;
 import com.vi.tenantservice.api.tenant.SubdomainExtractor;
 import com.vi.tenantservice.api.tenant.TenantResolverService;
@@ -100,6 +101,8 @@ class TenantServiceFacadeTest {
   @Mock
   private TenantFacadeDependentSettingsOverrideService tenantFacadeDependentSettingsOverrideService;
 
+  @Mock private TopicService topicService;
+
   @Mock private SingleDomainTenantOverrideService singleDomainTenantOverrideService;
 
   @InjectMocks private TenantServiceFacade tenantServiceFacade;
@@ -115,14 +118,16 @@ class TenantServiceFacadeTest {
     when(tenantInputSanitizer.sanitize(tenantMultilingualDTO)).thenReturn(sanitizedTenantDTO);
     when(converter.toEntity(tenantMultilingualDTO)).thenReturn(tenantEntity);
     when(tenantService.create(tenantEntity)).thenReturn(tenantEntity);
-
+    when(consultingTypeService.createDefaultConsultingType(tenantEntity.getId()))
+        .thenReturn(new FullConsultingTypeResponseDTO());
+    when(converter.toMultilingualDTO(tenantEntity)).thenReturn(sanitizedTenantDTO);
     // when
     tenantServiceFacade.createTenant(tenantMultilingualDTO);
 
     // then
     verify(converter).toEntity(sanitizedTenantDTO);
     verify(tenantService).create(tenantEntity);
-    verify(consultingTypeService).createDefaultConsultingTypes(tenantEntity.getId());
+    verify(consultingTypeService).createDefaultConsultingType(tenantEntity.getId());
     verify(applicationSettingsService, never()).saveMainTenantSubDomain(any());
   }
 
@@ -137,6 +142,8 @@ class TenantServiceFacadeTest {
     TenantEntity technicalTenant = mock(TenantEntity.class);
     when(technicalTenant.getId()).thenReturn(0L);
 
+    when(consultingTypeService.createDefaultConsultingType(entity.getId()))
+        .thenReturn(new FullConsultingTypeResponseDTO());
     when(tenantInputSanitizer.sanitize(tenantMultilingualDTO)).thenReturn(sanitizedTenantDTO);
     when(converter.toEntity(tenantMultilingualDTO)).thenReturn(entity);
     when(tenantService.create(entity)).thenReturn(entity);
@@ -150,7 +157,7 @@ class TenantServiceFacadeTest {
     // then
     verify(converter).toEntity(sanitizedTenantDTO);
     verify(tenantService).create(entity);
-    verify(consultingTypeService).createDefaultConsultingTypes(entity.getId());
+    verify(consultingTypeService).createDefaultConsultingType(entity.getId());
     verify(applicationSettingsService).saveMainTenantSubDomain("app1");
   }
 
@@ -180,7 +187,7 @@ class TenantServiceFacadeTest {
         });
 
     // then
-    verify(consultingTypeService).createDefaultConsultingTypes(entity.getId());
+    verify(consultingTypeService).createDefaultConsultingType(entity.getId());
     verify(applicationSettingsService, never()).saveMainTenantSubDomain(any());
   }
 

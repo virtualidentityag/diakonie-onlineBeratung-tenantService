@@ -33,25 +33,25 @@ public class ConsultingTypeService {
   @Value("${default.consulting.types.json.path}")
   private String defaultConsultingTypesFilePath;
 
-  public void createDefaultConsultingTypes(Long tenantId) {
+  public FullConsultingTypeResponseDTO createDefaultConsultingType(Long tenantId) {
     final File file = configurationFileLoader.loadFrom(defaultConsultingTypesFilePath);
     try {
       ConsultingTypeDTO consultingTypeDTO =
           new ObjectMapper().readValue(file, ConsultingTypeDTO.class);
       consultingTypeDTO.setTenantId(tenantId.intValue());
-      createConsultingType(consultingTypeDTO);
+      return createConsultingType(consultingTypeDTO);
     } catch (IOException ioException) {
       log.error("Error while reading default consulting types configuration file", ioException);
       throw new InternalServerErrorException();
     }
   }
 
-  private void createConsultingType(ConsultingTypeDTO consultingTypeDTO)
+  private FullConsultingTypeResponseDTO createConsultingType(ConsultingTypeDTO consultingTypeDTO)
       throws RestClientException {
     var consultingTypeControllerApi =
         consultingTypeServiceApiControllerFactory.createControllerApi();
     addDefaultHeaders(consultingTypeControllerApi.getApiClient());
-    consultingTypeControllerApi.createConsultingType(consultingTypeDTO);
+    return consultingTypeControllerApi.createConsultingType(consultingTypeDTO);
   }
 
   public FullConsultingTypeResponseDTO patchConsultingType(
