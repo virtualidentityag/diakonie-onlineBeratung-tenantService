@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.10.0](https://github.com/virtualidentityag/vi-saas-tenantService/compare/v1.9.0...v1.10.0) (2025-11-26)
+
+
+### Features
+
+* change tenant names to accept values with length up to 100 ([f82c5a4](https://github.com/virtualidentityag/vi-saas-tenantService/commit/f82c5a4ddbb39234332236e48d15f20aef61cc3c))
+* change tenant names to accept values with length up to 100 ([340895d](https://github.com/virtualidentityag/vi-saas-tenantService/commit/340895dcce39da45ccf56b5bfbddfd44d9b63d53))
+
 ## 1.9.0 (2024-05-13)
 
 

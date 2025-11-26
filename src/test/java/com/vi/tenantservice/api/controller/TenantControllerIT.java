@@ -36,6 +36,7 @@ import com.vi.tenantservice.api.tenant.TenantResolverService;
 import com.vi.tenantservice.api.util.MultilingualTenantTestDataBuilder;
 import com.vi.tenantservice.config.security.AuthorisationService;
 import java.util.Optional;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -49,7 +50,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -329,31 +329,33 @@ class TenantControllerIT {
     when(authorisationService.hasRole("tenant-admin")).thenReturn(true);
     AuthenticationMockBuilder builder = new AuthenticationMockBuilder();
     giveAuthorisationServiceReturnProperAuthoritiesForRole(TENANT_ADMIN);
+    String tenantNameOfLength99 = RandomStringUtils.random(99, 'A', 'Z' + 1, true, false);
+
     when(consultingTypeService.getConsultingTypesByTenantId(1))
         .thenReturn(
             new com.vi.tenantservice.consultingtypeservice.generated.web.model
                     .FullConsultingTypeResponseDTO()
                 .id(2));
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/tenantadmin/1")
-                    .with(authentication(builder.withUserRole(TENANT_ADMIN.getValue()).build()))
-                    .contentType(APPLICATION_JSON)
-                    .content(
-                        multilingualTenantTestDataBuilder
-                            .withId(1L)
-                            .withName("tenant")
-                            .withSubdomain("changed subdomain")
-                            .withSettingActiveLanguages(Lists.newArrayList("fr", "pl"))
-                            .withLicensing()
-                            .jsonify())
-                    .contentType(APPLICATION_JSON))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.subdomain").value("changed subdomain"))
-            .andExpect(jsonPath("$.settings.topicsInRegistrationEnabled").value("true"))
-            .andExpect(jsonPath("$.settings.activeLanguages").value(Lists.newArrayList("fr", "pl")))
-            .andReturn();
+    mockMvc
+        .perform(
+            put("/tenantadmin/1")
+                .with(authentication(builder.withUserRole(TENANT_ADMIN.getValue()).build()))
+                .contentType(APPLICATION_JSON)
+                .content(
+                    multilingualTenantTestDataBuilder
+                        .withId(1L)
+                        .withName(tenantNameOfLength99)
+                        .withSubdomain("changed subdomain")
+                        .withSettingActiveLanguages(Lists.newArrayList("fr", "pl"))
+                        .withLicensing()
+                        .jsonify())
+                .contentType(APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value(tenantNameOfLength99))
+        .andExpect(jsonPath("$.subdomain").value("changed subdomain"))
+        .andExpect(jsonPath("$.settings.topicsInRegistrationEnabled").value("true"))
+        .andExpect(jsonPath("$.settings.activeLanguages").value(Lists.newArrayList("fr", "pl")))
+        .andReturn();
   }
 
   @Test
@@ -645,21 +647,6 @@ class TenantControllerIT {
         .perform(
             get(EXISTING_TENANT)
                 .with(authentication(builder.withUserRole(SINGLE_TENANT_ADMIN.getValue()).build()))
-                .contentType(APPLICATION_JSON))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(1));
-  }
-
-  @Test
-  void
-      getTenant_Should_returnStatusOk_When_calledWithExistingTenantIdAndForRestrictedAgencyAdminAuthority()
-          throws Exception {
-    var builder = new AuthenticationMockBuilder();
-    giveAuthorisationServiceReturnProperAuthoritiesForRole(TENANT_ADMIN);
-    mockMvc
-        .perform(
-            get(EXISTING_TENANT)
-                .with(authentication(builder.withUserRole(TENANT_ADMIN.getValue()).build()))
                 .contentType(APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(1));
